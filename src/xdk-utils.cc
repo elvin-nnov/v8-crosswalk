@@ -67,18 +67,60 @@ std::string ClassNames::SerializeChunk() {
 }
 
 
-String* ClassNames::GetConstructorName(Address address) {
-  HeapObject *heap_object = HeapObject::FromAddress(address);
-  bool is_js_object = heap_object->IsJSObject();
-  if (!is_js_object) {
-    // TODO(amalyshe): look for another function for taking the class name
-    // String* constructor_name = object2->constructor_name();
-    return NULL;
+const char* ClassNames::GetConstructorName(Address address) {
+  const char* name;
+  HeapObject* heap_object = HeapObject::FromAddress(address);
+
+  // support of all type, if some are built-in, we add hard-coded values
+  if (heap_object->IsJSObject()) {
+    JSObject* object = JSObject::cast(heap_object);
+    if (object->IsJSFunction()) {
+      Heap* heap = object->GetHeap();
+      name = names_->GetName(String::cast(heap->closure_string()));
+    } else {
+      name = names_->GetName(object->constructor_name());
+    }
+  } else if (heap_object->IsJSFunction()) {
+    JSFunction* func = JSFunction::cast(heap_object);
+    SharedFunctionInfo* shared = func->shared();
+    name = shared->bound() ? names_->GetCopy("native_bind") :
+        names_->GetName(String::cast(shared->name()));
+  } else if (heap_object->IsJSRegExp()) {
+    JSRegExp* re = JSRegExp::cast(heap_object);
+    name = names_->GetName(re->Pattern());
+  } else if (heap_object->IsString()) {
+    String* string = String::cast(heap_object);
+    if (string->IsConsString())
+      name = names_->GetCopy("(concatenated string)");
+    else if (string->IsSlicedString())
+      name = names_->GetCopy("(sliced string)");
+    else
+      name = names_->GetCopy("(string)");
+  } else if (heap_object->IsSymbol()) {
+    name = names_->GetCopy("symbol");
+  } else if (heap_object->IsCode()) {
+    name = names_->GetCopy("(code)");
+  } else if (heap_object->IsSharedFunctionInfo()) {
+      name = names_->GetName(String::cast(
+          SharedFunctionInfo::cast(heap_object)->name()));
+  } else if (heap_object->IsScript()) {
+    name = names_->GetName(String::cast(Script::cast(heap_object)->name()));
+  } else if (heap_object->IsNativeContext()) {
+    name = names_->GetCopy(("system / NativeContext"));
+  } else if (heap_object->IsContext()) {
+    name = names_->GetCopy("system / Context");
+  } else if (heap_object->IsFixedArray() ||
+             heap_object->IsFixedDoubleArray() ||
+             heap_object->IsByteArray() ||
+             heap_object->IsExternalArray()) {
+    name = names_->GetCopy("(array)");
+  } else if (heap_object->IsHeapNumber()) {
+    name = names_->GetCopy("(number)");
+  } else {
+    name = names_->GetCopy("system / NOT SUPORTED YET");
   }
-  JSObject* object = JSObject::cast(heap_object);
-  Heap* heap = object->GetHeap();
-  if (object->IsJSFunction()) return heap->closure_string();
-  return object->constructor_name();
+
+  return name;
 }
 
 

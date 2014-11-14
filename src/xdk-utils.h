@@ -25,7 +25,7 @@ class ClassNames {
 
   unsigned registerName(const char* className);
   std::string SerializeChunk();
-  String* GetConstructorName(Address address);
+  const char* GetConstructorName(Address address);
 
  private:
   unsigned counter_;
