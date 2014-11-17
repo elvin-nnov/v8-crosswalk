@@ -25,12 +25,27 @@ class ClassNames {
 
   unsigned registerName(const char* className);
   std::string SerializeChunk();
-  String* GetConstructorName(Address address);
+  const char* GetConstructorName(Address address);
 
  private:
   unsigned counter_;
   HashMap char_to_idx_;
   StringsStorage* names_;
+  
+  const char* name_native_bind_;
+  const char* name_conc_string_;
+  const char* name_sliced_string_;
+  const char* name_string_;
+  const char* name_symbol_;
+  const char* name_code_;
+  const char* name_system_ncontext_;
+  const char* name_system_context_;
+  const char* name_farray_;
+  const char* name_fdarray_;
+  const char* name_barray_;
+  const char* name_earray_;
+  const char* name_number_;
+  const char* name_system_;
 };
 
 
