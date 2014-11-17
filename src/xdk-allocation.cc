@@ -309,8 +309,8 @@ unsigned XDKAllocationTracker::InitClassName(Address address, unsigned ts,
   if (info->className_ == (unsigned)-1) {
     const char* str = classNames_->GetConstructorName(address);
     if (str) {
-      // get const char*, it's safe because pointer will be retained in the
-      // name_ until it is destroyed
+      // storing of const char*, it's safe because it will be retained in the
+      // name_ until storage is destroyed, i.e. until the end of the collection
       id = classNames_->registerName(str);
     }
   }
