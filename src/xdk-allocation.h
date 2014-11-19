@@ -20,7 +20,7 @@ class SymbolsStorage;
 class AggregatedChunks;
 class RuntimeInfo;
 class References;
-class RefSet;
+struct RefSet;
 
 
 class XDKSnapshotFiller: public SnapshotFiller {
