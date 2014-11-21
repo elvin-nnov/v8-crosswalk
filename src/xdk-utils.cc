@@ -37,16 +37,16 @@ ClassNames::ClassNames(StringsStorage* names)
   name_conc_string_ = names_->GetCopy("(concatenated string)");
   name_sliced_string_ = names_->GetCopy("(sliced string)");
   name_string_ = names_->GetCopy("(string)");
-  name_symbol_ = names_->GetCopy("symbol");
-  name_code_ = names_->GetCopy("code");
-  name_system_ncontext_ = names_->GetCopy("system / NativeContext");
-  name_system_context_ = names_->GetCopy("system / Context");
-  name_farray_ = names_->GetCopy("FixedArray");
-  name_fdarray_ = names_->GetCopy("FixedDoubleArray");
-  name_barray_ = names_->GetCopy("ByteArray");
-  name_earray_ = names_->GetCopy("ExternalArray");
-  name_number_ = names_->GetCopy("number");
-  name_system_ = names_->GetCopy("system");
+  name_symbol_ = names_->GetCopy("(symbol)");
+  name_code_ = names_->GetCopy("(compiled code)");
+  name_system_ncontext_ = names_->GetCopy("(system / NativeContext)");
+  name_system_context_ = names_->GetCopy("(system / Context)");
+  name_farray_ = names_->GetCopy("(fixed array)");
+  name_fdarray_ = names_->GetCopy("(fixed double array)");
+  name_barray_ = names_->GetCopy("(byte array)");
+  name_earray_ = names_->GetCopy("(external array)");
+  name_number_ = names_->GetCopy("(number)");
+  name_system_ = names_->GetCopy("(system)");
 }
 
 
