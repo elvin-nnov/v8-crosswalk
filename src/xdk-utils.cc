@@ -29,24 +29,31 @@ static uint32_t AddressHash(Address addr) {
 }
 
 
-ClassNames::ClassNames(StringsStorage* names)
+ClassNames::ClassNames(StringsStorage* names, Heap* heap)
     : counter_(0),
     char_to_idx_(AddressesMatch),
-    names_(names) {
-  name_native_bind_ = names_->GetCopy("native_bind");
-  name_conc_string_ = names_->GetCopy("(concatenated string)");
-  name_sliced_string_ = names_->GetCopy("(sliced string)");
-  name_string_ = names_->GetCopy("(string)");
-  name_symbol_ = names_->GetCopy("(symbol)");
-  name_code_ = names_->GetCopy("(compiled code)");
-  name_system_ncontext_ = names_->GetCopy("(system / NativeContext)");
-  name_system_context_ = names_->GetCopy("(system / Context)");
-  name_farray_ = names_->GetCopy("(fixed array)");
-  name_fdarray_ = names_->GetCopy("(fixed double array)");
-  name_barray_ = names_->GetCopy("(byte array)");
-  name_earray_ = names_->GetCopy("(external array)");
-  name_number_ = names_->GetCopy("(number)");
-  name_system_ = names_->GetCopy("(system)");
+    names_(names),
+    heap_(heap),
+    name_native_bind_("native_bind"),
+    name_conc_string_("(concatenated string)"),
+    name_sliced_string_("(sliced string)"),
+    name_string_("String"),
+    name_symbol_("(symbol)"),
+    name_code_("(compiled code)"),
+    name_system_ncontext_("(system / NativeContext)"),
+    name_system_context_("(system / Context)"),
+    name_array_("(array)"),
+    name_number_("(number)"),
+    name_system_("(system)"),
+    name_shared_fi_("(shared function info)"),
+    name_script_("(script)"),
+    name_regexp_("RegExp") {
+  id_function_bindings_ = registerName("(function bindings)");
+  id_function_literals_ = registerName("(function literals)");
+  id_objects_properties_ = registerName("(object properties)");
+  id_objects_elements_ = registerName("(object elements)");
+  id_shared_function_info_ = registerName("(shared function info)");
+  id_context_ = registerName("(context)");
 }
 
 
@@ -81,7 +88,37 @@ std::string ClassNames::SerializeChunk() {
 }
 
 
-const char* ClassNames::GetConstructorName(Address address) {
+bool ClassNames::IsEssentialObject(Object* object) {
+  return object->IsHeapObject()
+    && !object->IsOddball()
+    && object != heap_->empty_byte_array()
+    && object != heap_->empty_fixed_array()
+    && object != heap_->empty_descriptor_array()
+    && object != heap_->fixed_array_map()
+    && object != heap_->cell_map()
+    && object != heap_->global_property_cell_map()
+    && object != heap_->shared_function_info_map()
+    && object != heap_->free_space_map()
+    && object != heap_->one_pointer_filler_map()
+    && object != heap_->two_pointer_filler_map();
+}
+
+
+void ClassNames::registerNameForDependent(HeapObject* object,
+                                          RuntimeInfo* runtime_info,
+                                          unsigned id) {
+  if (object && IsEssentialObject(object)) {
+    PostCollectedInfo* info =
+      runtime_info->FindPostCollectedInfo(object->address());
+    // TODO (amalyshe) do we need to add here object collaing
+    // runtime_info_->AddPostCollectedInfo? 
+    if (info) {
+      info->className_ = id;
+    }
+  }
+}
+
+const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime_info) {
   const char* name;
   HeapObject* heap_object = HeapObject::FromAddress(address);
 
@@ -91,17 +128,30 @@ const char* ClassNames::GetConstructorName(Address address) {
     if (object->IsJSFunction()) {
       Heap* heap = object->GetHeap();
       name = names_->GetName(String::cast(heap->closure_string()));
+      JSFunction* js_fun = JSFunction::cast(object);
+      SharedFunctionInfo* shared_info = js_fun->shared();
+      bool bound = shared_info->bound();
+      HeapObject* obj = js_fun->literals_or_bindings();
+      registerNameForDependent(obj, runtime_info,
+          bound ? id_function_bindings_ : id_function_literals_);
+      registerNameForDependent(shared_info, runtime_info,
+                               id_shared_function_info_);
+      registerNameForDependent(js_fun->context(), runtime_info,
+                               id_context_);
     } else {
       name = names_->GetName(object->constructor_name());
     }
+    HeapObject* prop = reinterpret_cast<HeapObject*>(object->properties());
+    registerNameForDependent(prop, runtime_info, id_objects_properties_);
+    HeapObject* elements = reinterpret_cast<HeapObject*>(object->elements());
+    registerNameForDependent(elements, runtime_info, id_objects_elements_);
   } else if (heap_object->IsJSFunction()) {
     JSFunction* func = JSFunction::cast(heap_object);
     SharedFunctionInfo* shared = func->shared();
     name = shared->bound() ? name_native_bind_ :
         names_->GetName(String::cast(shared->name()));
   } else if (heap_object->IsJSRegExp()) {
-    JSRegExp* re = JSRegExp::cast(heap_object);
-    name = names_->GetName(re->Pattern());
+      name = name_regexp_;
   } else if (heap_object->IsString()) {
     String* string = String::cast(heap_object);
     if (string->IsConsString())
@@ -115,22 +165,18 @@ const char* ClassNames::GetConstructorName(Address address) {
   } else if (heap_object->IsCode()) {
     name = name_code_;
   } else if (heap_object->IsSharedFunctionInfo()) {
-      name = names_->GetName(String::cast(
-          SharedFunctionInfo::cast(heap_object)->name()));
+      name = name_shared_fi_;
   } else if (heap_object->IsScript()) {
-    name = names_->GetName(String::cast(Script::cast(heap_object)->name()));
+    name = name_script_;
   } else if (heap_object->IsNativeContext()) {
     name = name_system_ncontext_;
   } else if (heap_object->IsContext()) {
     name = name_system_context_;
-  } else if (heap_object->IsFixedArray() ) {
-    name = name_farray_;
-  } else if (heap_object->IsFixedDoubleArray()) {
-    name = name_fdarray_;
-  } else if (heap_object->IsByteArray()) {
-    name = name_barray_;
-  } else if (heap_object->IsExternalArray()) {
-    name = name_earray_;
+  } else if (heap_object->IsFixedArray() ||
+             heap_object->IsFixedDoubleArray() ||
+             heap_object->IsByteArray() ||
+             heap_object->IsExternalArray() ) {
+    name = name_array_;
   } else if (heap_object->IsHeapNumber()) {
     name = name_number_;
   } else {

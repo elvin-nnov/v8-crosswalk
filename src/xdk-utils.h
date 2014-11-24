@@ -17,21 +17,28 @@ namespace internal {
 class AggregatedChunks;
 class StringsStorage;
 class JavaScriptFrame;
+class RuntimeInfo;
 
 // --- ClassNames
 class ClassNames {
  public:
-  explicit ClassNames(StringsStorage* names);
+  explicit ClassNames(StringsStorage* names, Heap* heap);
 
   unsigned registerName(const char* className);
   std::string SerializeChunk();
-  const char* GetConstructorName(Address address);
+  bool IsEssentialObject(Object* object);
+  void registerNameForDependent(HeapObject* object,
+                                RuntimeInfo* runtime_info,
+                                unsigned id);
+  const char* GetConstructorName(Address address, RuntimeInfo* runtime_info);
+
 
  private:
   unsigned counter_;
   HashMap char_to_idx_;
   StringsStorage* names_;
-  
+  Heap* heap_;
+
   const char* name_native_bind_;
   const char* name_conc_string_;
   const char* name_sliced_string_;
@@ -40,12 +47,18 @@ class ClassNames {
   const char* name_code_;
   const char* name_system_ncontext_;
   const char* name_system_context_;
-  const char* name_farray_;
-  const char* name_fdarray_;
-  const char* name_barray_;
-  const char* name_earray_;
+  const char* name_array_;
   const char* name_number_;
   const char* name_system_;
+  const char* name_shared_fi_;
+  const char* name_script_;
+  const char* name_regexp_;
+  unsigned id_function_bindings_;
+  unsigned id_function_literals_;
+  unsigned id_objects_properties_;
+  unsigned id_objects_elements_;
+  unsigned id_shared_function_info_;
+  unsigned id_context_;
 };
 
 

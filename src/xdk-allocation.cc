@@ -32,7 +32,7 @@ XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
   runtime_info_ = new RuntimeInfo(aggregated_chunks_);
   symbols_ = new SymbolsStorage(ids_->heap(), names_);
   collectedStacks_ = new ShadowStack();
-  classNames_ = new ClassNames(names_);
+  classNames_ = new ClassNames(names_, ids_->heap());
 
   List<unsigned> stack_ooc;
   stack_ooc.Add(symbols_->registerSymInfo(1, "OutOfContext", "NoSource",
@@ -307,7 +307,7 @@ unsigned XDKAllocationTracker::InitClassName(Address address, unsigned ts,
     info->size_ = size;
   }
   if (info->className_ == (unsigned)-1) {
-    const char* str = classNames_->GetConstructorName(address);
+    const char* str = classNames_->GetConstructorName(address, runtime_info_);
     if (str) {
       // storing of const char*, it's safe because it will be retained in the
       // name_ until storage is destroyed, i.e. until the end of the collection
