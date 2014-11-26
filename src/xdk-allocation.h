@@ -21,6 +21,7 @@ class AggregatedChunks;
 class RuntimeInfo;
 class References;
 struct RefSet;
+struct PostCollectedInfo;
 
 
 class XDKSnapshotFiller: public SnapshotFiller {
@@ -79,6 +80,12 @@ class XDKSnapshotFiller: public SnapshotFiller {
 };
 
 
+struct LatestAllocation {
+  Address address_;
+  PostCollectedInfo* info_;
+};
+
+
 class XDKAllocationTracker {
  public:
   XDKAllocationTracker(HeapProfiler* heap_profiler,
@@ -116,7 +123,8 @@ class XDKAllocationTracker {
 
   unsigned FindClassName(Address address);
   unsigned InitClassName(Address address, unsigned ts, unsigned size);
-
+  unsigned InitClassName(Address address, PostCollectedInfo* info);
+  
   SymbolsStorage* symbols_;
   ShadowStack* collectedStacks_;
   ClassNames* classNames_;
@@ -133,6 +141,13 @@ class XDKAllocationTracker {
   bool strict_collection_;
   References* references_;
   std::map<Address, RefSet> individualReteiners_;
+
+  // here is a loop container which stores the elements not more than
+  // a_treshold_ and when the capacity is achieved we start to resolve the
+  // object's types and increase the a_current_ until achievement of treshold
+  List<LatestAllocation> latest_allocations_;
+  unsigned a_treshold_;
+  unsigned a_current_;
 };
 
 

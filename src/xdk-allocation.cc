@@ -12,8 +12,18 @@
 #include "frames-inl.h"
 #include "src/xdk-utils.h"
 
+#include <fstream>
+static std::ofstream g_log("/mnt/sdcard/log/xdk-allocation.cc.txt");
+
 namespace v8 {
 namespace internal {
+
+static List<LatestAllocation>* g_la_list = NULL;
+void XDKGCPrologueCallback(v8::Isolate*, GCType, GCCallbackFlags) {
+    if (g_la_list) {
+      g_la_list->Clear();
+    }
+}
 
 XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
                                            HeapObjectsMap *ids,
@@ -26,7 +36,9 @@ XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
     names_(names),
     stackDepth_(stackDepth),
     collectRetention_(collectRetention),
-    strict_collection_(strict_collection) {
+    strict_collection_(strict_collection),
+    a_treshold_(100),
+    a_current_(0) {
   references_ = new References();
   aggregated_chunks_ = new AggregatedChunks();
   runtime_info_ = new RuntimeInfo(aggregated_chunks_);
@@ -48,6 +60,10 @@ XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
 
   baseTime_ = v8::base::Time::Now();
   latest_delta_ = 0;
+  
+  g_la_list = &this->latest_allocations_;
+  v8::Isolate::GCPrologueCallback e = (v8::Isolate::GCPrologueCallback) &XDKGCPrologueCallback;
+  ids_->heap()->AddGCPrologueCallback(e, kGCTypeAll, false);
 }
 
 
@@ -58,6 +74,7 @@ XDKAllocationTracker::~XDKAllocationTracker() {
   delete runtime_info_;
   delete symbols_;
   delete references_;
+  g_la_list = NULL;
 }
 
 
@@ -114,6 +131,31 @@ void XDKAllocationTracker::OnAlloc(Address addr, int size) {
   info->stackId_ = sid;
   info->className_ = (unsigned int)-1;
   info->dirty_ = false;
+  
+  // init the type info for previous allocated object
+  if (latest_allocations_.length() == a_treshold_) {
+    // resolve next allocation to process
+    LatestAllocation& allocation = latest_allocations_.at(a_current_);
+    InitClassName(allocation.address_, allocation.info_);
+    a_current_++;
+    if (a_current_ >= a_treshold_) {
+        a_current_ = 0;
+    }
+  }
+  
+  if( latest_allocations_.length() < a_treshold_ ) {
+    LatestAllocation allocation;
+    allocation.address_ = addr;
+    allocation.info_ = info;
+    latest_allocations_.Add(allocation);
+  } else {
+      unsigned allocation_to_update =
+          a_current_ ? a_current_ - 1 : a_treshold_ - 1;
+      LatestAllocation& allocation =
+          latest_allocations_.at(allocation_to_update);
+      allocation.address_ = addr;
+      allocation.info_ = info;
+  }
 }
 
 
@@ -295,17 +337,9 @@ unsigned XDKAllocationTracker::FindClassName(Address address) {
 }
 
 
-unsigned XDKAllocationTracker::InitClassName(Address address, unsigned ts,
-                                             unsigned size) {
+unsigned XDKAllocationTracker::InitClassName(Address address,
+                                             PostCollectedInfo* info) {
   unsigned id = -2;
-  PostCollectedInfo* info = runtime_info_->FindPostCollectedInfo(address);
-  if (!info) {
-    info = runtime_info_->AddPostCollectedInfo(address, ts);
-    info->className_ = -1;
-    info->stackId_ = outOfContextFrame_;
-    info->timeStamp_ = ts;
-    info->size_ = size;
-  }
   if (info->className_ == (unsigned)-1) {
     const char* str = classNames_->GetConstructorName(address, runtime_info_);
     if (str) {
@@ -314,8 +348,21 @@ unsigned XDKAllocationTracker::InitClassName(Address address, unsigned ts,
       id = classNames_->registerName(str);
     }
   }
-  info->className_ = id;
-  return id;
+  info->className_ = id;  
+  return info->className_;
+}
+
+unsigned XDKAllocationTracker::InitClassName(Address address, unsigned ts,
+                                             unsigned size) {
+  PostCollectedInfo* info = runtime_info_->FindPostCollectedInfo(address);
+  if (!info) {
+    info = runtime_info_->AddPostCollectedInfo(address, ts);
+    info->className_ = -1;
+    info->stackId_ = outOfContextFrame_;
+    info->timeStamp_ = ts;
+    info->size_ = size;
+  }
+  return InitClassName(address, info);
 }
 
 
