@@ -7,10 +7,6 @@
 #include "src/frames-inl.h"
 #include "src/xdk-utils.h"
 
-#include <fstream>
-static std::ofstream g_log("/mnt/sdcard/log/xdk-utils.cc.txt");
-
-
 namespace v8 {
 namespace internal {
 
@@ -58,12 +54,6 @@ ClassNames::ClassNames(StringsStorage* names, Heap* heap)
   id_objects_elements_ = registerName("(object elements)");
   id_shared_function_info_ = registerName("(shared function info)");
   id_context_ = registerName("(context)");
-  g_log << "id_function_bindings_ " << id_function_bindings_ << std::endl;
-  g_log << "id_function_literals_ " << id_function_literals_ << std::endl;
-  g_log << "id_objects_properties_ " << id_objects_properties_ << std::endl;
-  g_log << "id_objects_elements_ " << id_objects_elements_ << std::endl;
-  g_log << "id_shared_function_info_ " << id_shared_function_info_ << std::endl;
-  g_log << "id_context_ " << id_context_ << std::endl;
 }
 
 
@@ -131,11 +121,7 @@ void ClassNames::registerNameForDependent(HeapObject* object,
     // counted twice
     if (info) {
       info->className_ = id;
-      g_log << "+able to find object to register type: " << id << std::endl;
-    } else {
-      g_log << "-was not able to find object to register type: " << id << std::endl;
     }
-    
   }
 }
 
@@ -514,7 +500,6 @@ int c_1 = 0, c_2 = 0;
       }
     }
   }
-g_log << "--- c_1" << c_1 << " c_2 " << c_2 << std::endl;
 }
 
 
@@ -560,8 +545,6 @@ void AggregatedChunks::addObjectToAggregated(PostCollectedInfo* info,
   // get the bucket for the first time
   reserved_key_->tsBegin_ = info->timeStamp_ - (info->timeStamp_ % bucketSize_);
   reserved_key_->tsEnd_ = td - (td % bucketSize_);
-if (info->className_ == (unsigned)-1)
-    g_log << reserved_key_->tsEnd_ - reserved_key_->tsBegin_ << "," << reserved_key_->tsBegin_ << "," << reserved_key_->tsEnd_ <<std::endl;
 
   HashMap::Entry* aggregated_entry = aggregated_map_.Lookup(reserved_key_,
                                                 AggregatedHash(*reserved_key_),

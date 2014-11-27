@@ -12,9 +12,6 @@
 #include "frames-inl.h"
 #include "src/xdk-utils.h"
 
-#include <fstream>
-static std::ofstream g_log("/mnt/sdcard/log/xdk-allocation.cc.txt");
-
 namespace v8 {
 namespace internal {
 
@@ -37,7 +34,7 @@ XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
     stackDepth_(stackDepth),
     collectRetention_(collectRetention),
     strict_collection_(strict_collection),
-    a_treshold_(100),
+    a_treshold_(50),
     a_current_(0) {
   references_ = new References();
   aggregated_chunks_ = new AggregatedChunks();
