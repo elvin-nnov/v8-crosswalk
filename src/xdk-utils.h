@@ -59,6 +59,8 @@ class ClassNames {
   unsigned id_objects_elements_;
   unsigned id_shared_function_info_;
   unsigned id_context_;
+  unsigned id_code_relocation_info_;
+  unsigned id_code_deopt_data_;
 };
 
 

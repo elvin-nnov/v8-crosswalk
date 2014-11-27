@@ -54,6 +54,8 @@ ClassNames::ClassNames(StringsStorage* names, Heap* heap)
   id_objects_elements_ = registerName("(object elements)");
   id_shared_function_info_ = registerName("(shared function info)");
   id_context_ = registerName("(context)");
+  id_code_relocation_info_ = registerName("(code relocation info)");
+  id_code_deopt_data_ = registerName("(code deopt data)");
 }
 
 
@@ -170,6 +172,11 @@ const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime
   } else if (heap_object->IsSymbol()) {
     name = name_symbol_;
   } else if (heap_object->IsCode()) {
+    Code* code = Code::cast(heap_object);
+    registerNameForDependent(code->relocation_info(), runtime_info,
+                               id_code_relocation_info_);
+    registerNameForDependent(code->deoptimization_data(), runtime_info,
+                               id_code_deopt_data_);
     name = name_code_;
   } else if (heap_object->IsSharedFunctionInfo()) {
       name = name_shared_fi_;
@@ -185,7 +192,7 @@ const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime
              heap_object->IsExternalArray() ) {
     name = name_array_;
   } else if (heap_object->IsHeapNumber()) {
-    name = name_number_;
+    name = name_number_;    
   } else {
     name = name_system_;
   }
