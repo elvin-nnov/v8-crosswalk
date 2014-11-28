@@ -33,21 +33,21 @@ ClassNames::ClassNames(StringsStorage* names, Heap* heap)
     : counter_(0),
     char_to_idx_(AddressesMatch),
     names_(names),
-    heap_(heap),
-    name_native_bind_("native_bind"),
-    name_conc_string_("(concatenated string)"),
-    name_sliced_string_("(sliced string)"),
-    name_string_("String"),
-    name_symbol_("(symbol)"),
-    name_code_("(compiled code)"),
-    name_system_ncontext_("(system / NativeContext)"),
-    name_system_context_("(system / Context)"),
-    name_array_("(array)"),
-    name_number_("(number)"),
-    name_system_("(system)"),
-    name_shared_fi_("(shared function info)"),
-    name_script_("(script)"),
-    name_regexp_("RegExp") {
+    heap_(heap) {
+  id_native_bind_ = registerName("native_bind");
+  id_conc_string_ = registerName("(concatenated string)");
+  id_sliced_string_ = registerName("(sliced string)");
+  id_string_ = registerName("String");
+  id_symbol_ = registerName("(symbol)");
+  id_code_ = registerName("(compiled code)");
+  id_system_ncontext_ = registerName("(system / NativeContext)");
+  id_system_context_ = registerName("(system / Context)");
+  id_array_ = registerName("(array)");
+  id_number_ = registerName("(number)");
+  id_system_ = registerName("(system)");
+  id_shared_fi_ = registerName("(shared function info)");
+  id_script_ = registerName("(script)");
+  id_regexp_ = registerName("RegExp");
   id_function_bindings_ = registerName("(function bindings)");
   id_function_literals_ = registerName("(function literals)");
   id_objects_properties_ = registerName("(object properties)");
@@ -63,6 +63,10 @@ unsigned ClassNames::registerName(const char* name) {
   // since const char is retained outside and cannot be moved, we rely on this
   // and just compare the pointers. It should be enough for the strings from the
   // only one StringStorage
+  if (!name) {
+    return -2;
+  }
+
   unsigned counter;
   HashMap::Entry* entry = char_to_idx_.Lookup(const_cast<char*>(name),
       CharAddressHash(const_cast<char*>(name)),
@@ -127,8 +131,9 @@ void ClassNames::registerNameForDependent(HeapObject* object,
   }
 }
 
-const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime_info) {
-  const char* name;
+unsigned ClassNames::GetConstructorName(Address address,
+                                           RuntimeInfo* runtime_info) {
+  unsigned id = (unsigned)-2;
   HeapObject* heap_object = HeapObject::FromAddress(address);
 
   // support of all type, if some are built-in, we add hard-coded values
@@ -136,7 +141,8 @@ const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime
     JSObject* object = JSObject::cast(heap_object);
     if (object->IsJSFunction()) {
       Heap* heap = object->GetHeap();
-      name = names_->GetName(String::cast(heap->closure_string()));
+      const char* name = names_->GetName(String::cast(heap->closure_string()));
+      id = registerName(name);
       JSFunction* js_fun = JSFunction::cast(object);
       SharedFunctionInfo* shared_info = js_fun->shared();
       bool bound = shared_info->bound();
@@ -148,7 +154,8 @@ const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime
       registerNameForDependent(js_fun->context(), runtime_info,
                                id_context_);
     } else {
-      name = names_->GetName(object->constructor_name());
+      const char* name = names_->GetName(object->constructor_name());
+      id = registerName(name);
     }
     HeapObject* prop = reinterpret_cast<HeapObject*>(object->properties());
     registerNameForDependent(prop, runtime_info, id_objects_properties_);
@@ -157,47 +164,47 @@ const char* ClassNames::GetConstructorName(Address address, RuntimeInfo* runtime
   } else if (heap_object->IsJSFunction()) {
     JSFunction* func = JSFunction::cast(heap_object);
     SharedFunctionInfo* shared = func->shared();
-    name = shared->bound() ? name_native_bind_ :
-        names_->GetName(String::cast(shared->name()));
+    id = shared->bound() ? id_native_bind_ :
+        registerName(names_->GetName(String::cast(shared->name())));
   } else if (heap_object->IsJSRegExp()) {
-      name = name_regexp_;
+      id = id_regexp_;
   } else if (heap_object->IsString()) {
     String* string = String::cast(heap_object);
     if (string->IsConsString())
-      name = name_conc_string_;
+      id = id_conc_string_;
     else if (string->IsSlicedString())
-      name = name_sliced_string_;
+      id = id_sliced_string_;
     else
-      name = name_string_;
+      id = id_string_;
   } else if (heap_object->IsSymbol()) {
-    name = name_symbol_;
+    id = id_symbol_;
   } else if (heap_object->IsCode()) {
     Code* code = Code::cast(heap_object);
     registerNameForDependent(code->relocation_info(), runtime_info,
                                id_code_relocation_info_);
     registerNameForDependent(code->deoptimization_data(), runtime_info,
                                id_code_deopt_data_);
-    name = name_code_;
+    id = id_code_;
   } else if (heap_object->IsSharedFunctionInfo()) {
-      name = name_shared_fi_;
+      id = id_shared_fi_;
   } else if (heap_object->IsScript()) {
-    name = name_script_;
+    id = id_script_;
   } else if (heap_object->IsNativeContext()) {
-    name = name_system_ncontext_;
+    id = id_system_ncontext_;
   } else if (heap_object->IsContext()) {
-    name = name_system_context_;
+    id = id_system_context_;
   } else if (heap_object->IsFixedArray() ||
              heap_object->IsFixedDoubleArray() ||
              heap_object->IsByteArray() ||
              heap_object->IsExternalArray() ) {
-    name = name_array_;
+    id = id_array_;
   } else if (heap_object->IsHeapNumber()) {
-    name = name_number_;    
+    id = id_number_;    
   } else {
-    name = name_system_;
+    id = id_system_;
   }
 
-  return name;
+  return id;
 }
 
 

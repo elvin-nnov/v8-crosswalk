@@ -336,16 +336,9 @@ unsigned XDKAllocationTracker::FindClassName(Address address) {
 
 unsigned XDKAllocationTracker::InitClassName(Address address,
                                              PostCollectedInfo* info) {
-  unsigned id = -2;
   if (info->className_ == (unsigned)-1) {
-    const char* str = classNames_->GetConstructorName(address, runtime_info_);
-    if (str) {
-      // storing of const char*, it's safe because it will be retained in the
-      // name_ until storage is destroyed, i.e. until the end of the collection
-      id = classNames_->registerName(str);
-    }
+    info->className_ = classNames_->GetConstructorName(address, runtime_info_);
   }
-  info->className_ = id;  
   return info->className_;
 }
 

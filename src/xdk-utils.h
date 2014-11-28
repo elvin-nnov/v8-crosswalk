@@ -30,7 +30,7 @@ class ClassNames {
   void registerNameForDependent(HeapObject* object,
                                 RuntimeInfo* runtime_info,
                                 unsigned id);
-  const char* GetConstructorName(Address address, RuntimeInfo* runtime_info);
+  unsigned GetConstructorName(Address address, RuntimeInfo* runtime_info);
 
 
  private:
@@ -39,20 +39,20 @@ class ClassNames {
   StringsStorage* names_;
   Heap* heap_;
 
-  const char* name_native_bind_;
-  const char* name_conc_string_;
-  const char* name_sliced_string_;
-  const char* name_string_;
-  const char* name_symbol_;
-  const char* name_code_;
-  const char* name_system_ncontext_;
-  const char* name_system_context_;
-  const char* name_array_;
-  const char* name_number_;
-  const char* name_system_;
-  const char* name_shared_fi_;
-  const char* name_script_;
-  const char* name_regexp_;
+  unsigned id_native_bind_;
+  unsigned id_conc_string_;
+  unsigned id_sliced_string_;
+  unsigned id_string_;
+  unsigned id_symbol_;
+  unsigned id_code_;
+  unsigned id_system_ncontext_;
+  unsigned id_system_context_;
+  unsigned id_array_;
+  unsigned id_number_;
+  unsigned id_system_;
+  unsigned id_shared_fi_;
+  unsigned id_script_;
+  unsigned id_regexp_;
   unsigned id_function_bindings_;
   unsigned id_function_literals_;
   unsigned id_objects_properties_;
