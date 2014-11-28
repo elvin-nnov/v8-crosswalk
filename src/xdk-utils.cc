@@ -116,7 +116,7 @@ void ClassNames::registerNameForDependent(HeapObject* object,
   if (object && IsEssentialObject(object)) {
     PostCollectedInfo* info =
       runtime_info->FindPostCollectedInfo(object->address());
-    // TODO (amalyshe) here we are loosing some information because
+    // TODO(amalyshe) here we are loosing some information because
     // *some* of the objects are allocated without notification of explicit
     // allocation and no XDKAllocationTracker::OnAlloc will be called for them.
     // But these objects exist in the heap and can be achieved if we iterate

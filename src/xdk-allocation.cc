@@ -59,7 +59,8 @@ XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
   latest_delta_ = 0;
   
   g_la_list = &this->latest_allocations_;
-  v8::Isolate::GCPrologueCallback e = (v8::Isolate::GCPrologueCallback) &XDKGCPrologueCallback;
+  v8::Isolate::GCPrologueCallback e =
+      (v8::Isolate::GCPrologueCallback) &XDKGCPrologueCallback;
   ids_->heap()->AddGCPrologueCallback(e, kGCTypeAll, false);
 }
 
@@ -139,8 +140,8 @@ void XDKAllocationTracker::OnAlloc(Address addr, int size) {
         a_current_ = 0;
     }
   }
-  
-  if( latest_allocations_.length() < a_treshold_ ) {
+
+  if (latest_allocations_.length() < a_treshold_) {
     LatestAllocation allocation;
     allocation.address_ = addr;
     allocation.info_ = info;

@@ -146,8 +146,8 @@ class XDKAllocationTracker {
   // a_treshold_ and when the capacity is achieved we start to resolve the
   // object's types and increase the a_current_ until achievement of treshold
   List<LatestAllocation> latest_allocations_;
-  unsigned a_treshold_;
-  unsigned a_current_;
+  int a_treshold_;
+  int a_current_;
 };
 
 
