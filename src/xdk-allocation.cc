@@ -15,11 +15,11 @@
 namespace v8 {
 namespace internal {
 
-static List<LatestAllocation>* g_la_list = NULL;
+static List<InfoToResolve>* g_la_list = NULL;
 void XDKGCPrologueCallback(v8::Isolate*, GCType, GCCallbackFlags) {
-    if (g_la_list) {
-      g_la_list->Clear();
-    }
+  if (g_la_list) {
+    g_la_list->Clear();
+  }
 }
 
 XDKAllocationTracker::XDKAllocationTracker(HeapProfiler* heap_profiler,
@@ -133,7 +133,7 @@ void XDKAllocationTracker::OnAlloc(Address addr, int size) {
   // init the type info for previous allocated object
   if (latest_allocations_.length() == a_treshold_) {
     // resolve next allocation to process
-    LatestAllocation& allocation = latest_allocations_.at(a_current_);
+    InfoToResolve& allocation = latest_allocations_.at(a_current_);
     InitClassName(allocation.address_, allocation.info_);
     a_current_++;
     if (a_current_ >= a_treshold_) {
@@ -142,14 +142,14 @@ void XDKAllocationTracker::OnAlloc(Address addr, int size) {
   }
 
   if (latest_allocations_.length() < a_treshold_) {
-    LatestAllocation allocation;
+    InfoToResolve allocation;
     allocation.address_ = addr;
     allocation.info_ = info;
     latest_allocations_.Add(allocation);
   } else {
       unsigned allocation_to_update =
           a_current_ ? a_current_ - 1 : a_treshold_ - 1;
-      LatestAllocation& allocation =
+      InfoToResolve& allocation =
           latest_allocations_.at(allocation_to_update);
       allocation.address_ = addr;
       allocation.info_ = info;
